@@ -6,6 +6,47 @@ import type {
 } from 'n8n-workflow';
 import { NodeConnectionType, NodeOperationError } from 'n8n-workflow';
 import { query, type SDKMessage } from '@anthropic-ai/claude-agent-sdk';
+import * as path from 'path';
+import * as fs from 'fs';
+
+// Helper function to load MCP servers from .claude/.mcp.json
+function loadMCPServers(
+	executeFunctions: IExecuteFunctions,
+	projectPath: string,
+	debug?: boolean,
+): Record<string, any> {
+	try {
+		const basePath = projectPath || process.cwd();
+		const mcpConfigPath = path.join(basePath, '.claude', '.mcp.json');
+
+		if (debug) {
+			executeFunctions.logger.debug('Looking for MCP config', { mcpConfigPath });
+		}
+
+		if (fs.existsSync(mcpConfigPath)) {
+			const mcpConfig = JSON.parse(fs.readFileSync(mcpConfigPath, 'utf8'));
+			const mcpServers = mcpConfig.mcpServers || {};
+
+			if (debug) {
+				executeFunctions.logger.debug('Loaded MCP servers', {
+					serverCount: Object.keys(mcpServers).length,
+					servers: Object.keys(mcpServers),
+				});
+			}
+
+			return mcpServers;
+		} else {
+			if (debug) {
+				executeFunctions.logger.debug('No MCP config found', { mcpConfigPath });
+			}
+		}
+	} catch (error) {
+		executeFunctions.logger.warn('Failed to load MCP config', {
+			error: error instanceof Error ? error.message : String(error),
+		});
+	}
+	return {};
+}
 
 export class ClaudeCode implements INodeType {
 	description: INodeTypeDescription = {
@@ -352,6 +393,8 @@ export class ClaudeCode implements INodeType {
 							: { type: 'preset', preset: 'claude_code' },
 						// Enable settings sources by default
 						settingSources: ['user', 'project', 'local'],
+						// Load MCP servers from .claude/.mcp.json
+						mcpServers: loadMCPServers(this, projectPath, additionalOptions.debug),
 					},
 				};
 
