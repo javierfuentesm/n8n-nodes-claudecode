@@ -5,7 +5,7 @@ import type {
 	INodeTypeDescription,
 } from 'n8n-workflow';
 import { NodeConnectionType, NodeOperationError } from 'n8n-workflow';
-import { query, type SDKMessage } from '@anthropic-ai/claude-code';
+import { query, type SDKMessage } from '@anthropic-ai/claude-agent-sdk';
 
 export class ClaudeCode implements INodeType {
 	description: INodeTypeDescription = {
@@ -327,7 +327,8 @@ export class ClaudeCode implements INodeType {
 						maxTurns: number;
 						permissionMode: 'default' | 'acceptEdits' | 'bypassPermissions' | 'plan';
 						model: string;
-						systemPrompt?: string;
+						systemPrompt?: string | { type: 'preset'; preset: 'claude_code'; append?: string };
+						settingSources?: Array<'user' | 'project' | 'local'>;
 						mcpServers?: Record<string, any>;
 						allowedTools?: string[];
 						disallowedTools?: string[];
@@ -345,13 +346,14 @@ export class ClaudeCode implements INodeType {
 						maxTurns,
 						permissionMode: (additionalOptions.permissionMode || 'bypassPermissions') as any,
 						model,
+						// Default to claude_code preset with optional custom append
+						systemPrompt: additionalOptions.systemPrompt
+							? { type: 'preset', preset: 'claude_code', append: additionalOptions.systemPrompt }
+							: { type: 'preset', preset: 'claude_code' },
+						// Enable settings sources by default
+						settingSources: ['user', 'project', 'local'],
 					},
 				};
-
-				// Add optional parameters
-				if (additionalOptions.systemPrompt) {
-					queryOptions.options.systemPrompt = additionalOptions.systemPrompt;
-				}
 
 				// Add project path (cwd) if specified
 				if (projectPath && projectPath.trim() !== '') {
