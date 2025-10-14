@@ -48,10 +48,10 @@ function loadMCPServers(
 	return {};
 }
 
-export class ClaudeCode implements INodeType {
+export class ClaudeAgent implements INodeType {
 	description: INodeTypeDescription = {
-		displayName: 'Claude Code',
-		name: 'claudeCode',
+		displayName: 'Claude Agent',
+		name: 'claudeAgent',
 		icon: 'file:claudecode.svg',
 		group: ['transform'],
 		version: 1,
